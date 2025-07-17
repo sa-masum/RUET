@@ -38,3 +38,16 @@ class Student(AbstractBaseUser):
 
     def __str__(self):
         return self.email
+
+
+class Teacher(models.Model):
+    email = models.EmailField(unique=True)
+    password = models.CharField(max_length=128)
+    name = models.CharField(max_length=100)
+    department = models.CharField(max_length=100)
+    designation = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.department})"

@@ -9,6 +9,13 @@ import StudentSettings from '../pages/StudentSettings';
 import StudentProfile from '../pages/StudentProfile';
 import StudentDashboard from '../pages/StudentDashboard';
 
+import TeacherSignup from '../pages/TeacherSignup';
+import TeacherLogin from '../pages/TeacherLogin';
+import TeacherHome from '../pages/TeacherHome';
+import TeacherSettings from '../pages/TeacherSettings';
+import TeacherProfile from '../pages/TeacherProfile';
+import TeacherDashboard from '../pages/TeacherDashboard';
+
 
 const BACKEND_URL = 'http://localhost:8000';
 
@@ -25,20 +32,36 @@ async function checkStudentAuth() {
   }
 }
 
+async function checkTeacherAuth() {
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/accounts/check_teacher_token/`, {
+      method: 'GET',
+      credentials: 'include'
+    });
+    const data = await res.json();
+    return res.ok && data.valid;
+  } catch {
+    return false;
+  }
+}
+
 function App() {
   const [authState, setAuthState] = useState({
     student: null,    // null = loading, true = logged in, false = not logged in
+    teacher: null     // same for teacher
   });
   const location = useLocation();
 
   useEffect(() => {
     const verifyAuth = async () => {
-      const [studentAuth] = await Promise.all([
+      const [studentAuth, teacherAuth] = await Promise.all([
         checkStudentAuth(),
+        checkTeacherAuth()
       ]);
       
       setAuthState({
         student: studentAuth,
+        teacher: teacherAuth
       });
     };
 
@@ -49,8 +72,12 @@ function App() {
     setAuthState(prev => ({ ...prev, student: status }));
   };
 
+  const handleTeacherLogin = (status) => {
+    setAuthState(prev => ({ ...prev, teacher: status }));
+  };
+
   // Show loading while checking auth status
-  if (authState.student === null) {
+  if (authState.student === null || authState.teacher === null) {
     return (
       <div style={{
         display: 'flex',
@@ -102,6 +129,44 @@ function App() {
             authState.student ? <StudentDashboard /> : <Navigate to="/student-login" replace state={{ from: location }} />
           }
         />
+
+
+        {/* Teacher Routes */}
+        <Route
+          path="/teacher-signup"
+          element={<TeacherSignup />}
+        />
+        <Route
+          path="/teacher-login"
+          element={
+            authState.teacher ? <Navigate to="/teacher-home" replace /> : <TeacherLogin setIsLoggedIn={handleTeacherLogin} />
+          }
+        />
+        <Route
+          path="/teacher-home"
+          element={
+            authState.teacher ? <TeacherHome /> : <Navigate to="/teacher-login" replace />
+          }
+        />
+        <Route
+          path="/teacher-settings"
+          element={
+            authState.teacher ? <TeacherSettings /> : <Navigate to="/teacher-login" replace />
+          }
+        />
+        <Route
+          path="/teacher-profile"
+          element={
+            authState.teacher ? <TeacherProfile /> : <Navigate to="/teacher-login" replace />
+          }
+        />
+        <Route
+          path="/teacher-dashboard"
+          element={
+            authState.teacher ? <TeacherDashboard /> : <Navigate to="/teacher-login" replace state={{ from: location }} />
+          }
+        />
+
 
         {/* Fallback route */}
         <Route
