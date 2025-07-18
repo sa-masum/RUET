@@ -6,10 +6,15 @@ A full-stack web application for managing student and teacher profiles, built wi
 
 - 👨‍🎓 Student Signup/Login with OTP
 - 👨‍🏫 Teacher Signup/Login with OTP
+- 👨‍💼 Department Head Signup/Login with OTP
 - 🔐 Email OTP verification using Gmail SMTP
-- 📋 Separate Dashboards for Students and Teachers
+- 📋 Separate Dashboards for:
+  - Students
+  - Teachers
+  - Department Heads
 - ⚙️ Profile Management (Edit/Update)
 - 🔁 JWT-based Authentication
+- 🔒 Role-based Access Control
 
 
 ## 🛠️ Tech Stack

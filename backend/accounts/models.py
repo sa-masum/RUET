@@ -51,3 +51,23 @@ class Teacher(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.department})"
+    
+
+class Head(models.Model):
+    email = models.EmailField(unique=True)
+    password = models.CharField(max_length=128)
+    name = models.CharField(max_length=100)
+    department = models.CharField(max_length=100)
+    designation = models.CharField(
+        max_length=100,
+        default='Department Head',
+        editable=False
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+    office_location = models.CharField(max_length=100)
+    office_phone = models.CharField(max_length=20)
+    
+
+    def __str__(self):
+        return f"{self.name} (Head of {self.department})"

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const StudentSignup = () => {
+const HeadSignup = () => {
   const [step, setStep] = useState('form'); // 'form' | 'otp'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,9 +14,8 @@ const StudentSignup = () => {
   const handleSendOtp = async (e) => {
     e.preventDefault();
     setError('');
-    // Send OTP to the email using backend
     try {
-      const res = await fetch(`${BACKEND_URL}/api/accounts/send_otp/student`, {
+      const res = await fetch(`${BACKEND_URL}/api/accounts/send_otp/head`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -35,16 +34,15 @@ const StudentSignup = () => {
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     setError('');
-    // Here you would verify the OTP and create the user
     try {
-      const res = await fetch(`${BACKEND_URL}/api/accounts/signup/student`, {
+      const res = await fetch(`${BACKEND_URL}/api/accounts/signup/head`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, otp })
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        navigate('/student-login');
+        navigate('/head-login');
       } else {
         setError(data.error || 'Signup failed');
       }
@@ -75,7 +73,7 @@ const StudentSignup = () => {
       >
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '2rem' }}>
           <img src="/ruet_logo.png" alt="RUET Logo" style={{ width: 90, marginBottom: '1rem', borderRadius: '50%' }} />
-          <h2 style={{ margin: 0, color: '#2563eb', fontWeight: 800, fontSize: '2rem', letterSpacing: '1px', textAlign: 'center' }}>RUET Portal Signup</h2>
+          <h2 style={{ margin: 0, color: '#2563eb', fontWeight: 800, fontSize: '2rem', letterSpacing: '1px', textAlign: 'center' }}>RUET Head Portal Signup</h2>
         </div>
         {step === 'form' && (
           <form onSubmit={handleSendOtp}>
@@ -94,7 +92,7 @@ const StudentSignup = () => {
                   fontSize: '1rem',
                   background: '#f1f5f9'
                 }}
-                placeholder="Enter your email"
+                placeholder="Enter your head email (e.g., head@cse.ruet.ac.bd)"
               />
             </div>
             <div style={{ marginBottom: '1.5rem' }}>
@@ -185,7 +183,7 @@ const StudentSignup = () => {
         )}
         <div style={{ textAlign: 'center', margin: '1.5rem 0 0 0', color: '#64748b', fontWeight: 500 }}>
           Already have an account?{' '}
-          <a href="/student-login" style={{ color: '#2563eb', textDecoration: 'underline', fontWeight: 600 }}>
+          <a href="/head-login" style={{ color: '#2563eb', textDecoration: 'underline', fontWeight: 600 }}>
             Login
           </a>
         </div>
@@ -211,4 +209,4 @@ const StudentSignup = () => {
   );
 };
 
-export default StudentSignup;
+export default HeadSignup;

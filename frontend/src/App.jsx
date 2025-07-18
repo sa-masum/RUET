@@ -16,6 +16,13 @@ import TeacherSettings from '../pages/TeacherSettings';
 import TeacherProfile from '../pages/TeacherProfile';
 import TeacherDashboard from '../pages/TeacherDashboard';
 
+import HeadSignup from '../pages/HeadSignup';
+import HeadLogin from '../pages/HeadLogin';
+import HeadHome from '../pages/HeadHome';
+import HeadSettings from '../pages/HeadSettings';
+import HeadProfile from '../pages/HeadProfile';
+import HeadDashboard from '../pages/HeadDashboard';
+
 
 const BACKEND_URL = 'http://localhost:8000';
 
@@ -45,23 +52,39 @@ async function checkTeacherAuth() {
   }
 }
 
+async function checkHeadAuth() {
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/accounts/check_head_token/`, {
+      method: 'GET',
+      credentials: 'include'
+    });
+    const data = await res.json();
+    return res.ok && data.valid;
+  } catch {
+    return false;
+  }
+}
+
 function App() {
   const [authState, setAuthState] = useState({
     student: null,    // null = loading, true = logged in, false = not logged in
-    teacher: null     // same for teacher
+    teacher: null,    // same for teacher
+    head: null        // same for head
   });
   const location = useLocation();
 
   useEffect(() => {
     const verifyAuth = async () => {
-      const [studentAuth, teacherAuth] = await Promise.all([
+      const [studentAuth, teacherAuth, headAuth] = await Promise.all([
         checkStudentAuth(),
-        checkTeacherAuth()
+        checkTeacherAuth(),
+        checkHeadAuth()
       ]);
       
       setAuthState({
         student: studentAuth,
-        teacher: teacherAuth
+        teacher: teacherAuth,
+        head: headAuth
       });
     };
 
@@ -76,8 +99,12 @@ function App() {
     setAuthState(prev => ({ ...prev, teacher: status }));
   };
 
+  const handleHeadLogin = (status) => {
+    setAuthState(prev => ({ ...prev, head: status }));
+  };
+
   // Show loading while checking auth status
-  if (authState.student === null || authState.teacher === null) {
+  if (authState.student === null || authState.teacher === null || authState.head === null) {
     return (
       <div style={{
         display: 'flex',
@@ -164,6 +191,42 @@ function App() {
           path="/teacher-dashboard"
           element={
             authState.teacher ? <TeacherDashboard /> : <Navigate to="/teacher-login" replace state={{ from: location }} />
+          }
+        />
+
+        {/* Head Route */}
+        <Route
+          path="/head-signup"
+          element={<HeadSignup />}
+        />
+        <Route
+          path="/head-login"
+          element={
+            authState.head ? <Navigate to="/head-home" replace /> : <HeadLogin setIsLoggedIn={handleHeadLogin} />
+          }
+        />
+        <Route
+          path="/head-home"
+          element={
+            authState.head ? <HeadHome /> : <Navigate to="/head-login" replace />
+          }
+        />
+        <Route
+          path="/head-settings"
+          element={
+            authState.head ? <HeadSettings /> : <Navigate to="/head-login" replace />
+          }
+        />
+        <Route
+          path="/head-profile"
+          element={
+            authState.head ? <HeadProfile /> : <Navigate to="/head-login" replace />
+          }
+        />
+        <Route
+          path="/head-dashboard"
+          element={
+            authState.head ? <HeadDashboard /> : <Navigate to="/head-login" replace state={{ from: location }} />
           }
         />
 

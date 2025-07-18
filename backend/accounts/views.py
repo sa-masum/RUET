@@ -3,7 +3,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import Student, Teacher
+from .models import Student, Teacher, Head
 from django.contrib.auth.hashers import check_password, make_password
 import json
 import random
@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 OTP_STORE = {}
 STUDENT_TOKEN_STORE = {}
 TEACHER_TOKEN_STORE = {}
+HEAD_TOKEN_STORE = {}
 
 # Student
 
@@ -39,7 +40,7 @@ def check_student(request):
         return JsonResponse({'exists': exists, 'valid_domain': valid_domain})
 
 @csrf_exempt
-def send_otp(request):
+def send_student_otp(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         email = data.get('email', '')
@@ -63,7 +64,7 @@ def send_otp(request):
     return JsonResponse({'success': False, 'error': 'Invalid request'})
 
 @csrf_exempt
-def signup(request):
+def student_signup(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         email = data.get('email', '')
@@ -85,7 +86,7 @@ def generate_token(length=32):
     return ''.join(random.choices(chars, k=length))
 
 @csrf_exempt
-def login(request):
+def student_login(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -121,7 +122,7 @@ def login(request):
     return JsonResponse({'success': False, 'error': 'Invalid request'})
 
 @csrf_exempt
-def logout(request):
+def student_logout(request):
     if request.method == 'POST':
         response = JsonResponse({'success': True})
         response.delete_cookie('studentToken')
@@ -129,7 +130,7 @@ def logout(request):
     return JsonResponse({'success': False, 'error': 'Invalid request'})
 
 @csrf_exempt
-def change_password(request):
+def student_change_password(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -161,7 +162,7 @@ def change_password(request):
     return JsonResponse({'success': False, 'error': 'Invalid request'})
 
 @csrf_exempt
-def get_profile(request):
+def get_student_profile(request):
     token = request.COOKIES.get('studentToken')
     if not token or token not in STUDENT_TOKEN_STORE:
         return JsonResponse({'success': False, 'error': 'Authentication required'}, status=401)
@@ -188,7 +189,7 @@ def get_profile(request):
         return JsonResponse({'success': False, 'error': 'Server error'}, status=500)
 
 @csrf_exempt
-def update_profile(request):
+def update_student_profile(request):
     if request.method == 'POST':
         token = request.COOKIES.get('studentToken')
         if not token or token not in STUDENT_TOKEN_STORE:
@@ -220,7 +221,7 @@ def update_profile(request):
 # Teacher
 
 def is_ruet_teacher_email(email):
-    return email.endswith('@student.ruet.ac.bd')   # student => teacher
+    return email.endswith('@student.ruet.ac.bd')   # email => @cse.ruet.ac.bd
 
 @csrf_exempt
 def check_teacher_token(request):
@@ -231,8 +232,6 @@ def check_teacher_token(request):
         if expires > datetime.utcnow():
             valid = True
     return JsonResponse({'valid': valid})
-
-# Teacher functions
 
 @csrf_exempt
 def check_teacher(request):
@@ -408,5 +407,210 @@ def update_teacher_profile(request):
             return JsonResponse({'success': True})
         except Exception as e:
             print("Update teacher profile error:", str(e))
+            return JsonResponse({'success': False, 'error': 'Server error'}, status=500)
+    return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
+
+
+# Head Functions
+
+def is_ruet_head_email(email):
+    return email.endswith('@student.ruet.ac.bd')   
+
+# def is_ruet_head_email(email):
+#     valid_departments = ['arch', 'becm', 'cme', 'che', 'ce', 'cse', 'ece', 'eee', 'ete', 'ipe', 'mse', 'me', 'mte', 'urp'] 
+#     if email.startswith('head@') and email.endswith('.ruet.ac.bd'):
+#         parts = email.split('@')
+#         if len(parts) == 2:
+#             dept = parts[1].split('.')[0]
+#             return dept in valid_departments
+#     return False
+
+
+@csrf_exempt
+def check_head_token(request):
+    token = request.COOKIES.get('headToken')
+    valid = False
+    if token and token in HEAD_TOKEN_STORE:
+        expires = HEAD_TOKEN_STORE[token]['expires']
+        if expires > datetime.utcnow():
+            valid = True
+    return JsonResponse({'valid': valid})
+
+@csrf_exempt
+def check_head(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        email = data.get('email', '')
+        exists = Head.objects.filter(email=email).exists()
+        valid_domain = is_ruet_head_email(email)
+        return JsonResponse({'exists': exists, 'valid_domain': valid_domain})
+    
+@csrf_exempt
+def send_head_otp(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        email = data.get('email', '')
+        if not is_ruet_head_email(email):
+            return JsonResponse({'success': False, 'error': 'Invalid head email domain'})
+        if Head.objects.filter(email=email).exists():
+            return JsonResponse({'success': False, 'error': 'Email already exists'})
+        otp = str(random.randint(100000, 999999))
+        OTP_STORE[email] = otp
+        try:
+            send_mail(
+                'RUET Head Signup OTP',
+                f'Your OTP for RUET head signup is: {otp}',
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+                fail_silently=False,
+            )
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': 'Failed to send OTP'})
+    return JsonResponse({'success': False, 'error': 'Invalid request'})
+
+@csrf_exempt
+def head_signup(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        email = data.get('email', '')
+        password = data.get('password', '')
+        otp = data.get('otp', '')
+        name = data.get('name', '')
+        department = data.get('department', '')
+        
+        if not is_ruet_head_email(email):
+            return JsonResponse({'success': False, 'error': 'Invalid head email domain'})
+        if Head.objects.filter(email=email).exists():
+            return JsonResponse({'success': False, 'error': 'Email already exists'})
+        if OTP_STORE.get(email) != otp:
+            return JsonResponse({'success': False, 'error': 'Invalid OTP'})
+        
+        Head.objects.create(
+            email=email,
+            password=make_password(password),
+            name=name,
+            department=department
+        )
+        OTP_STORE.pop(email, None)
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False, 'error': 'Invalid request'})
+
+@csrf_exempt
+def head_login(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            email = data.get('email', '').strip()
+            password = data.get('password', '').strip()
+
+            try:
+                head = Head.objects.get(email=email)
+            except Head.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Invalid credentials'})
+
+            if check_password(password, head.password):
+                token = generate_token()
+                expires = datetime.utcnow() + timedelta(days=30)  # 1 month
+                HEAD_TOKEN_STORE[token] = {  
+                    'email': email,
+                    'expires': expires
+                }
+                response = JsonResponse({'success': True})
+                response.set_cookie(
+                    'headToken', 
+                    token,
+                    max_age=30*24*60*60,  # 30 days in seconds
+                    httponly=True,
+                )
+                return response
+            else:
+                return JsonResponse({'success': False, 'error': 'Invalid credentials'})
+        except Exception as e:
+            import traceback
+            print("Head login error:", traceback.format_exc())
+            return JsonResponse({'success': False, 'error': 'Server error'})
+    return JsonResponse({'success': False, 'error': 'Invalid request'})
+
+@csrf_exempt
+def head_logout(request):
+    if request.method == 'POST':
+        response = JsonResponse({'success': True})
+        response.delete_cookie('headToken')
+        return response
+    return JsonResponse({'success': False, 'error': 'Invalid request'})
+
+
+@csrf_exempt
+def head_change_password(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            prev_password = data.get('prev_password', '').strip()
+            new_password = data.get('new_password', '').strip()
+            token = request.COOKIES.get('headToken')
+
+            if not token or token not in HEAD_TOKEN_STORE:
+                return JsonResponse({'success': False, 'error': 'Authentication required'})
+
+            email = HEAD_TOKEN_STORE[token]['email']
+            head = Head.objects.get(email=email)
+
+            if not check_password(prev_password, head.password):
+                return JsonResponse({'success': False, 'error': 'Previous password is incorrect'})
+
+            head.password = make_password(new_password)
+            head.save()
+
+            return JsonResponse({'success': True})
+
+        except Exception as e:
+            import traceback
+            print("Head change password error:", traceback.format_exc())
+            return JsonResponse({'success': False, 'error': 'Server error'})
+
+    return JsonResponse({'success': False, 'error': 'Invalid request'})
+
+@csrf_exempt
+def get_head_profile(request):
+    token = request.COOKIES.get('headToken')
+    if not token or token not in HEAD_TOKEN_STORE:
+        return JsonResponse({'success': False, 'error': 'Authentication required'}, status=401)
+    email = HEAD_TOKEN_STORE[token]['email']
+    try:
+        head = Head.objects.get(email=email)
+        data = {
+            'email': head.email,
+            'name': head.name,
+            'department': head.department,
+            'designation': head.designation,
+            'office_location': head.office_location,
+            'office_phone': head.office_phone,
+            'created_at': head.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'is_active': head.is_active
+        }
+        return JsonResponse({'success': True, 'profile': data})
+    except Exception as e:
+        print("Get head profile error:", str(e))
+        return JsonResponse({'success': False, 'error': 'Server error'}, status=500)
+
+@csrf_exempt
+def update_head_profile(request):
+    if request.method == 'POST':
+        token = request.COOKIES.get('headToken')
+        if not token or token not in HEAD_TOKEN_STORE:
+            return JsonResponse({'success': False, 'error': 'Authentication required'}, status=401)
+        email = HEAD_TOKEN_STORE[token]['email']
+        try:
+            head = Head.objects.get(email=email)
+            data = json.loads(request.body)
+            head.name = data.get('name', head.name)
+            head.department = data.get('department', head.department)
+            head.office_location = data.get('office_location', head.office_location)
+            head.office_phone = data.get('office_phone', head.office_phone)
+            head.save()
+            return JsonResponse({'success': True})
+        except Exception as e:
+            print("Update head profile error:", str(e))
             return JsonResponse({'success': False, 'error': 'Server error'}, status=500)
     return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
